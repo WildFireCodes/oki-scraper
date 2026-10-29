@@ -21,6 +21,7 @@ Krok po kroku (bez programowania) opisuje to **[INSTRUKCJA.md](INSTRUKCJA.md)**.
 | `scraper/` | Program sprawdzający stronę (Python) |
 | `.github/workflows/scraper.yml` | Harmonogram uruchamiania na GitHub Actions |
 | `web/` | Panel ustawień (Vercel) |
+| `dev/server.mjs` | Lokalny podgląd panelu z udawanym GitHubem |
 | `tests/` | Testy automatyczne |
 
 ## Dla programistów
@@ -32,4 +33,5 @@ python -m scraper --test-telegram           # test (wymaga TELEGRAM_BOT_TOKEN i 
 SCRAPER_FORCE=api|rss|html|browser python -m scraper --dry-run   # wymuszenie jednej metody pobierania
 python -m unittest discover -s tests -t .   # testy Pythona
 node --test tests/api.test.mjs              # testy panelu
+node dev/server.mjs                         # podgląd panelu: http://localhost:8765 (hasło: test)
 ```
