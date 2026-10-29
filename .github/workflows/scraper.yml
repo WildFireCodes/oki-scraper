@@ -1,0 +1,110 @@
+name: Sprawdzanie strony OIL
+
+on:
+  schedule:
+    # GitHub liczy czas tylko w UTC, a my chcemy stałych godzin w Polsce:
+    # 02:00 oraz co 2 godziny od 08:00 do 20:00 (czas warszawski).
+    # Dlatego są dwie linie – po jednej na czas letni i zimowy.
+    # Krok "Bramka" poniżej przepuszcza tylko tę, która akurat pasuje do pory roku.
+
+    # Czas letni (CEST, Polska = UTC+2): 0,6,8,...,18 UTC = 02:00, 08:00, 10:00, ... 20:00
+    - cron: "17 0,6,8,10,12,14,16,18 * * *"
+    # Czas zimowy (CET, Polska = UTC+1): 1,7,9,...,19 UTC = 02:00, 08:00, 10:00, ... 20:00
+    - cron: "17 1,7,9,11,13,15,17,19 * * *"
+  workflow_dispatch:
+    inputs:
+      test_telegram:
+        type: boolean
+        default: false
+        description: "Wyślij tylko testowe powiadomienie"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scraper
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bramka (czy to właściwa pora roku dla tego harmonogramu)
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          set -euo pipefail
+          # Ręczne uruchomienie zawsze działa.
+          if [ "$EVENT_NAME" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Pierwsza linia "cron:" w tym pliku to czas letni, druga - zimowy.
+          # Dzięki temu zmiana godzin wymaga edycji tylko tych dwóch linii na górze pliku.
+          mapfile -t crons < <(sed -nE 's/^[[:space:]]*-[[:space:]]+cron:[[:space:]]*"([^"]*)".*$/\1/p' .github/workflows/scraper.yml)
+          offset="$(TZ=Europe/Warsaw date +%z)"
+          expected=""
+          if [ "$SCHEDULE" = "${crons[0]:-}" ]; then expected="+0200"; fi   # linia "czas letni"
+          if [ "$SCHEDULE" = "${crons[1]:-}" ]; then expected="+0100"; fi   # linia "czas zimowy"
+          if [ -z "$expected" ]; then
+            echo "Nie rozpoznano harmonogramu '$SCHEDULE' - uruchamiam na wszelki wypadek."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ "$offset" = "$expected" ]; then
+            echo "Przesunięcie Warszawy $offset pasuje do harmonogramu - uruchamiam."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Przesunięcie Warszawy to $offset, a ten harmonogram jest dla $expected - pomijam."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalacja bibliotek
+        if: steps.gate.outputs.run == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Wyślij testowe powiadomienie
+        if: steps.gate.outputs.run == 'true' && github.event.inputs.test_telegram == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m scraper --test-telegram
+
+      - name: Sprawdź stronę OIL
+        if: steps.gate.outputs.run == 'true' && github.event.inputs.test_telegram != 'true'
+        env:
+          PYTHONUNBUFFERED: "1"
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m scraper
+
+      - name: Zapisz stan w repozytorium
+        if: steps.gate.outputs.run == 'true' && github.event.inputs.test_telegram != 'true'
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain data/state.json)" ]; then
+            echo "Stan bez zmian - nic do zapisania."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/state.json
+          git commit -m "Aktualizacja stanu [skip ci]"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME"; then
+              exit 0
+            fi
+            echo "Próba $attempt nieudana, ponawiam..."
+            sleep $((attempt * 5))
+          done
+          echo "::error::Nie udało się zapisać stanu w repozytorium."
+          exit 1

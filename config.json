@@ -1,0 +1,24 @@
+{
+  "sources": [
+    {
+      "name": "Kursy i szkolenia",
+      "url": "https://oilkrakow.pl/kursy-i-szkolenia/",
+      "api": "https://oilkrakow.pl/wp-json/wp/v2/kursy-i-szkolenia",
+      "enabled": true
+    },
+    {
+      "name": "Konferencje",
+      "url": "https://oilkrakow.pl/konferencje/",
+      "api": "https://oilkrakow.pl/wp-json/wp/v2/konferencje",
+      "enabled": true
+    }
+  ],
+  "keywords": [
+    {
+      "word": "konferenc",
+      "message": "Jest nowa konferencja!"
+    }
+  ],
+  "notifyAllNew": true,
+  "defaultMessage": "Jest nowy wpis"
+}

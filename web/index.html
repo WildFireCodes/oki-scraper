@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<title>Obserwator OIL Kraków – panel</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --text: #1c2430;
+    --muted: #5d6b7c;
+    --border: #d7dee6;
+    --accent: #0b6bcb;
+    --accent-text: #ffffff;
+    --danger: #b3261e;
+    --ok: #1b7a3d;
+    --warn-bg: #fff4d6;
+    --err-bg: #fde8e6;
+    --ok-bg: #e3f5e8;
+    --input-bg: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12171d;
+      --card: #1b222b;
+      --text: #e6ebf1;
+      --muted: #9aa8b8;
+      --border: #333f4d;
+      --accent: #5aa6ff;
+      --accent-text: #08121f;
+      --danger: #ff8a80;
+      --ok: #62d68a;
+      --warn-bg: #3a3118;
+      --err-bg: #3b1f1d;
+      --ok-bg: #1b3325;
+      --input-bg: #121820;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 1.4rem; margin: 8px 0 16px; }
+  h2 { font-size: 1.1rem; margin: 0 0 12px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  label { display: block; font-weight: 600; margin-bottom: 4px; font-size: .9rem; }
+  input[type=text], input[type=url], input[type=password] {
+    width: 100%;
+    padding: 10px 12px;
+    font: inherit;
+    color: var(--text);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    min-height: 44px;
+  }
+  input:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .check { display: flex; align-items: center; gap: 10px; font-weight: 400; font-size: 1rem; min-height: 44px; margin: 0; cursor: pointer; }
+  .check input { width: 22px; height: 22px; flex: none; }
+  button {
+    font: inherit;
+    font-weight: 600;
+    min-height: 44px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button.danger { color: var(--danger); }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 10px;
+    align-items: end;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+  }
+  .row:first-of-type { border-top: 0; }
+  .row.src { grid-template-columns: 1fr 1.4fr; }
+  .row.src .full { grid-column: 1 / -1; }
+  .row.src .actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; grid-column: 1 / -1; }
+  .actions-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  .muted { color: var(--muted); font-size: .9rem; }
+  .msg { padding: 10px 12px; border-radius: 8px; margin: 12px 0 0; }
+  .msg.err { background: var(--err-bg); color: var(--danger); }
+  .msg.ok { background: var(--ok-bg); color: var(--ok); }
+  .msg.warn { background: var(--warn-bg); }
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list li { padding: 10px 0; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  ul.list li:first-child { border-top: 0; }
+  ul.list a { color: var(--accent); overflow-wrap: anywhere; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--border); font-size: .8rem; color: var(--muted); }
+  details { margin-top: 4px; }
+  summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  .hidden { display: none !important; }
+  header.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  @media (max-width: 600px) {
+    .wrap { padding: 12px; }
+    .row { grid-template-columns: 1fr; }
+    .row.src { grid-template-columns: 1fr; }
+    .row .del { justify-self: end; }
+    .actions-bar button { flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Obserwator OIL Kraków</h1>
+    <button id="logout" class="hidden" type="button">Wyloguj</button>
+  </header>
+
+  <!-- Logowanie -->
+  <section id="login" class="card hidden">
+    <h2>Logowanie</h2>
+    <form id="loginForm">
+      <label for="pw">Hasło do panelu</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <div class="actions-bar"><button class="primary" type="submit">Zaloguj</button></div>
+      <div id="loginMsg" class="msg err hidden" role="alert"></div>
+    </form>
+  </section>
+
+  <main id="app" class="hidden">
+    <section class="card">
+      <h2>Słowa kluczowe</h2>
+      <p class="muted">Gdy nowy wpis zawiera któreś z tych słów, dostaniesz powiadomienie z podanym tekstem. Pole „tekst powiadomienia” można zostawić puste – wtedy użyty będzie tekst domyślny.</p>
+      <div id="keywords"></div>
+      <div class="actions-bar"><button id="addKw" type="button">+ Dodaj słowo</button></div>
+      <details>
+        <summary>Jak działa dopasowanie słów?</summary>
+        <div class="muted">
+          <p>Wielkość liter i polskie znaki nie mają znaczenia: „konferencja” znajdzie też „KONFERENCJA”, a „lodz” znajdzie „Łódź”.</p>
+          <p>Słowo jest szukane także wewnątrz wyrazów. Dlatego wpisanie „konferenc” złapie „konferencja”, „konferencji” i „konferencje”.</p>
+          <p>Szukamy w tytule i w całym opisie wpisu. Jeśli wpis pasuje do kilku słów, użyty zostanie tekst pierwszego z listy (od góry), a w wiadomości pokażemy wszystkie znalezione słowa.</p>
+        </div>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Ogólne</h2>
+      <label class="check"><input id="notifyAll" type="checkbox"> Powiadamiaj o każdym nowym wpisie</label>
+      <p class="muted" style="margin:0 0 12px">Po wyłączeniu dostaniesz powiadomienia tylko o wpisach ze słowami kluczowymi.</p>
+      <label for="defMsg">Domyślny tekst powiadomienia</label>
+      <input id="defMsg" type="text" maxlength="300" placeholder="Jest nowy wpis">
+    </section>
+
+    <section class="card">
+      <h2>Źródła</h2>
+      <p class="muted">Strony, które są sprawdzane. Adres API jest opcjonalny (przyspiesza i ułatwia pobieranie).</p>
+      <div id="sources"></div>
+      <div class="actions-bar"><button id="addSrc" type="button">+ Dodaj źródło</button></div>
+    </section>
+
+    <section class="card">
+      <div class="actions-bar">
+        <button id="save" class="primary" type="button">Zapisz</button>
+        <button id="runNow" type="button">Uruchom sprawdzanie teraz</button>
+        <button id="runTest" type="button">Wyślij testowe powiadomienie</button>
+      </div>
+      <div id="actionMsg" class="msg hidden" role="status"></div>
+      <p class="muted">Zapisane zmiany obowiązują od następnego sprawdzania. „Uruchom sprawdzanie teraz” używa ostatnio zapisanej konfiguracji.</p>
+    </section>
+
+    <section class="card">
+      <h2>Ostatnie uruchomienia</h2>
+      <ul id="runs" class="list"><li class="muted">Ładowanie…</li></ul>
+      <h2 style="margin-top:20px">Ostatnie znalezione wpisy</h2>
+      <ul id="recent" class="list"><li class="muted">Ładowanie…</li></ul>
+      <div class="actions-bar"><button id="refresh" type="button">Odśwież</button></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const DEFAULT_MESSAGE = 'Jest nowy wpis';
+  let model = null;      // edytowana konfiguracja
+  let sha = null;        // wersja pliku w repozytorium
+  let dirty = false;
+
+  // ---------- pomocnicze
+  const store = {
+    get() { try { return localStorage.getItem('oki-panel-password') || ''; } catch { return ''; } },
+    set(v) { try { localStorage.setItem('oki-panel-password', v); } catch { /* ignoruj */ } },
+    clear() { try { localStorage.removeItem('oki-panel-password'); } catch { /* ignoruj */ } },
+  };
+  let password = store.get();
+
+  function h(tag, attrs, ...children) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k === 'class') el.className = v;
+      else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+      else if (v === true) el.setAttribute(k, '');
+      else if (v !== false && v != null) el.setAttribute(k, v);
+    }
+    for (const c of children.flat()) el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+    return el;
+  }
+  const safeUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : null);
+
+  function showMsg(el, text, kind) {
+    el.textContent = text;
+    el.className = 'msg ' + kind;
+    el.classList.toggle('hidden', !text);
+  }
+
+  class AuthError extends Error {}
+  async function api(path, opts = {}) {
+    let res;
+    try {
+      res = await fetch(path, {
+        method: opts.method || 'GET',
+        headers: { 'x-panel-password': password, ...(opts.body ? { 'Content-Type': 'application/json' } : {}) },
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+      });
+    } catch {
+      throw new Error('Brak połączenia z serwerem. Sprawdź internet i spróbuj ponownie.');
+    }
+    let data = null;
+    try { data = await res.json(); } catch { /* brak treści */ }
+    if (res.status === 401) throw new AuthError(data?.error || 'Nieprawidłowe hasło.');
+    if (!res.ok) {
+      const err = new Error(data?.error || `Błąd serwera (${res.status}).`);
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
+
+  // ---------- logowanie
+  function showLogin(error) {
+    $('app').classList.add('hidden');
+    $('logout').classList.add('hidden');
+    $('login').classList.remove('hidden');
+    showMsg($('loginMsg'), error || '', 'err');
+    $('pw').focus();
+  }
+  $('loginForm').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    password = $('pw').value;
+    try {
+      await loadAll();
+      store.set(password);
+    } catch (err) {
+      showLogin(err.message);
+    }
+  });
+  $('logout').addEventListener('click', () => {
+    store.clear();
+    password = '';
+    $('pw').value = '';
+    showLogin('');
+  });
+
+  // ---------- edycja: słowa kluczowe
+  function markDirty() { dirty = true; }
+
+  function renderKeywords() {
+    const box = $('keywords');
+    box.replaceChildren();
+    if (!model.keywords.length) box.append(h('p', { class: 'muted' }, 'Brak słów kluczowych.'));
+    model.keywords.forEach((kw, i) => {
+      box.append(h('div', { class: 'row' },
+        h('div', {},
+          h('label', { for: `kw-w-${i}` }, 'Słowo'),
+          h('input', { id: `kw-w-${i}`, type: 'text', maxlength: 100, value: kw.word, placeholder: 'np. konferenc',
+            oninput: (e) => { kw.word = e.target.value; markDirty(); } })),
+        h('div', {},
+          h('label', { for: `kw-m-${i}` }, 'Tekst powiadomienia'),
+          h('input', { id: `kw-m-${i}`, type: 'text', maxlength: 300, value: kw.message, placeholder: DEFAULT_MESSAGE,
+            oninput: (e) => { kw.message = e.target.value; markDirty(); } })),
+        h('button', { class: 'danger del', type: 'button', 'aria-label': `Usuń słowo ${kw.word}`,
+          onclick: () => { model.keywords.splice(i, 1); markDirty(); renderKeywords(); } }, 'Usuń')));
+    });
+  }
+  $('addKw').addEventListener('click', () => {
+    if (model.keywords.length >= 50) return showMsg($('actionMsg'), 'Maksymalnie 50 słów kluczowych.', 'err');
+    model.keywords.push({ word: '', message: '' });
+    markDirty();
+    renderKeywords();
+    $(`kw-w-${model.keywords.length - 1}`).focus();
+  });
+
+  // ---------- edycja: źródła
+  function renderSources() {
+    const box = $('sources');
+    box.replaceChildren();
+    model.sources.forEach((s, i) => {
+      box.append(h('div', { class: 'row src' },
+        h('div', {},
+          h('label', { for: `s-n-${i}` }, 'Nazwa'),
+          h('input', { id: `s-n-${i}`, type: 'text', maxlength: 100, value: s.name, oninput: (e) => { s.name = e.target.value; markDirty(); } })),
+        h('div', {},
+          h('label', { for: `s-u-${i}` }, 'Adres strony (URL)'),
+          h('input', { id: `s-u-${i}`, type: 'url', maxlength: 500, value: s.url, placeholder: 'https://…', oninput: (e) => { s.url = e.target.value; markDirty(); } })),
+        h('div', { class: 'full' },
+          h('label', { for: `s-a-${i}` }, 'Adres API (opcjonalnie)'),
+          h('input', { id: `s-a-${i}`, type: 'url', maxlength: 500, value: s.api || '', placeholder: 'https://…/wp-json/wp/v2/…', oninput: (e) => { s.api = e.target.value; markDirty(); } })),
+        h('div', { class: 'actions' },
+          h('label', { class: 'check' },
+            h('input', { type: 'checkbox', checked: s.enabled !== false, onchange: (e) => { s.enabled = e.target.checked; markDirty(); } }),
+            'Włączone'),
+          h('button', { class: 'danger', type: 'button', 'aria-label': `Usuń źródło ${s.name}`,
+            onclick: () => { model.sources.splice(i, 1); markDirty(); renderSources(); } }, 'Usuń'))));
+    });
+  }
+  $('addSrc').addEventListener('click', () => {
+    if (model.sources.length >= 20) return showMsg($('actionMsg'), 'Maksymalnie 20 źródeł.', 'err');
+    model.sources.push({ name: '', url: '', api: '', enabled: true });
+    markDirty();
+    renderSources();
+    $(`s-n-${model.sources.length - 1}`).focus();
+  });
+
+  $('notifyAll').addEventListener('change', (e) => { model.notifyAllNew = e.target.checked; markDirty(); });
+  $('defMsg').addEventListener('input', (e) => { model.defaultMessage = e.target.value; markDirty(); });
+
+  function renderAll() {
+    $('notifyAll').checked = model.notifyAllNew !== false;
+    $('defMsg').value = model.defaultMessage || '';
+    renderKeywords();
+    renderSources();
+  }
+
+  // ---------- zapis i uruchamianie
+  async function withBusy(btn, fn) {
+    btn.disabled = true;
+    try { await fn(); } finally { btn.disabled = false; }
+  }
+  const msg = $('actionMsg');
+
+  $('save').addEventListener('click', () => withBusy($('save'), async () => {
+    showMsg(msg, '', 'ok');
+    try {
+      const data = await api('/api/config', { method: 'PUT', body: { config: model, sha } });
+      sha = data.sha;
+      model = data.config;
+      dirty = false;
+      renderAll();
+      showMsg(msg, 'Zapisano. Zmiany zadziałają od następnego sprawdzania.', 'ok');
+    } catch (err) {
+      if (err instanceof AuthError) return showLogin(err.message);
+      showMsg(msg, err.message, err.status === 409 ? 'warn' : 'err');
+    }
+  }));
+
+  async function run(test, btn) {
+    if (dirty && !window.confirm('Masz niezapisane zmiany. Sprawdzanie użyje ostatnio zapisanej konfiguracji. Kontynuować?')) return;
+    await withBusy(btn, async () => {
+      try {
+        await api('/api/run', { method: 'POST', body: { test } });
+        showMsg(msg, test
+          ? 'Zlecono wysłanie testowego powiadomienia. Powinno dojść w ciągu minuty lub dwóch.'
+          : 'Zlecono sprawdzanie. Wynik pojawi się poniżej za około minutę.', 'ok');
+        setTimeout(loadStatus, 8000);
+      } catch (err) {
+        if (err instanceof AuthError) return showLogin(err.message);
+        showMsg(msg, err.message, 'err');
+      }
+    });
+  }
+  $('runNow').addEventListener('click', () => run(false, $('runNow')));
+  $('runTest').addEventListener('click', () => run(true, $('runTest')));
+
+  // ---------- status
+  const fmt = (iso) => {
+    const d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw', dateStyle: 'short', timeStyle: 'short' });
+  };
+  function runIcon(r) {
+    if (r.status !== 'completed') return ['⏳', 'w toku'];
+    switch (r.conclusion) {
+      case 'success': return ['✅', 'zakończone'];
+      case 'failure': return ['❌', 'błąd'];
+      case 'cancelled': return ['⚪', 'anulowane'];
+      case 'skipped': return ['⏭️', 'pominięte'];
+      default: return ['❔', r.conclusion || 'nieznany wynik'];
+    }
+  }
+  const EVENTS = { schedule: 'automatycznie', workflow_dispatch: 'ręcznie' };
+
+  async function loadStatus() {
+    try {
+      const data = await api('/api/status');
+      const runs = $('runs');
+      runs.replaceChildren();
+      if (!data.runs.length) runs.append(h('li', { class: 'muted' }, 'Brak uruchomień.'));
+      for (const r of data.runs) {
+        const [icon, label] = runIcon(r);
+        const link = safeUrl(r.html_url);
+        runs.append(h('li', {},
+          h('span', { 'aria-hidden': 'true' }, icon),
+          link ? h('a', { href: link, target: '_blank', rel: 'noopener noreferrer' }, `${fmt(r.created_at)} – ${label}`) : `${fmt(r.created_at)} – ${label}`,
+          h('span', { class: 'badge' }, EVENTS[r.event] || r.event)));
+      }
+      const recent = $('recent');
+      recent.replaceChildren();
+      if (!data.recent.length) recent.append(h('li', { class: 'muted' }, 'Na razie nic nie znaleziono.'));
+      for (const f of data.recent) {
+        const link = safeUrl(f.link);
+        recent.append(h('li', {},
+          link ? h('a', { href: link, target: '_blank', rel: 'noopener noreferrer' }, f.title || link) : (f.title || ''),
+          h('span', { class: 'muted' }, [f.source, fmt(f.foundAt)].filter(Boolean).join(' · ')),
+          ...(f.matched || []).map((w) => h('span', { class: 'badge' }, `🔑 ${w}`))));
+      }
+    } catch (err) {
+      if (err instanceof AuthError) return showLogin(err.message);
+      $('runs').replaceChildren(h('li', { class: 'muted' }, 'Nie udało się pobrać statusu: ' + err.message));
+      $('recent').replaceChildren();
+    }
+  }
+  $('refresh').addEventListener('click', loadStatus);
+
+  // ---------- start
+  async function loadAll() {
+    const data = await api('/api/config');
+    model = data.config;
+    model.sources = Array.isArray(model.sources) ? model.sources : [];
+    model.keywords = Array.isArray(model.keywords) ? model.keywords : [];
+    sha = data.sha;
+    dirty = false;
+    $('login').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    $('logout').classList.remove('hidden');
+    renderAll();
+    loadStatus();
+  }
+
+  window.addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  (async () => {
+    if (!password) return showLogin('');
+    try {
+      await loadAll();
+    } catch (err) {
+      showLogin(err.message);
+    }
+  })();
+})();
+</script>
+</body>
+</html>
